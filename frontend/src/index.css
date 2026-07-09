@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 245 246 248;
+    --foreground: 26 29 35;
+
+    --card: 255 255 255;
+    --card-foreground: 26 29 35;
+
+    --popover: 255 255 255;
+    --popover-foreground: 26 29 35;
+
+    --primary: 14 148 144;
+    --primary-foreground: 255 255 255;
+
+    --secondary: 240 241 244;
+    --secondary-foreground: 26 29 35;
+
+    --muted: 240 241 244;
+    --muted-foreground: 91 97 110;
+
+    --accent: 240 241 244;
+    --accent-foreground: 26 29 35;
+
+    --tertiary-foreground: 138 144 156;
+
+    --destructive: 217 66 69;
+    --destructive-foreground: 255 255 255;
+
+    --border: 211 214 220;
+    --input: 211 214 220;
+    --ring: 14 148 144;
+
+    --priority-p1: 217 66 69;
+    --priority-p2: 214 138 20;
+    --priority-p3: 45 108 224;
+    --priority-p4: 107 114 128;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 11 13 18;
+    --foreground: 230 232 236;
+
+    --card: 17 20 27;
+    --card-foreground: 230 232 236;
+
+    --popover: 17 20 27;
+    --popover-foreground: 230 232 236;
+
+    --primary: 34 184 176;
+    --primary-foreground: 4 33 29;
+
+    --secondary: 23 27 36;
+    --secondary-foreground: 230 232 236;
+
+    --muted: 23 27 36;
+    --muted-foreground: 154 161 175;
+
+    --accent: 23 27 36;
+    --accent-foreground: 230 232 236;
+
+    --tertiary-foreground: 92 100 112;
+
+    --destructive: 240 87 90;
+    --destructive-foreground: 255 255 255;
+
+    --border: 39 44 56;
+    --input: 39 44 56;
+    --ring: 34 184 176;
+
+    --priority-p1: 240 87 90;
+    --priority-p2: 245 165 36;
+    --priority-p3: 76 141 255;
+    --priority-p4: 139 146 158;
+
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+}

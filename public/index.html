@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý công việc team</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== AUTH VIEW ===== -->
+  <div id="authView" class="auth-view">
+    <div class="auth-card">
+      <h1>Quản lý công việc team</h1>
+
+      <form id="setupForm" class="auth-form" style="display:none">
+        <p class="auth-hint">Chưa có tài khoản nào. Tạo tài khoản quản trị đầu tiên:</p>
+        <label>Họ tên<input type="text" id="setupName" required></label>
+        <label>Tên đăng nhập<input type="text" id="setupUsername" required></label>
+        <label>Mật khẩu (tối thiểu 4 ký tự)<input type="password" id="setupPassword" required></label>
+        <div class="auth-error" id="setupError"></div>
+        <button type="submit" class="btn btn-primary btn-block">Tạo tài khoản & bắt đầu</button>
+      </form>
+
+      <form id="loginForm" class="auth-form" style="display:none">
+        <label>Tên đăng nhập<input type="text" id="loginUsername" required></label>
+        <label>Mật khẩu<input type="password" id="loginPassword" required></label>
+        <div class="auth-error" id="loginError"></div>
+        <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== APP SHELL ===== -->
+  <div id="appShell" style="display:none">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1>Quản lý công việc team</h1>
+        <nav class="tabs">
+          <button class="tab active" data-view="board">Bảng công việc</button>
+          <button class="tab" data-view="dashboard">Thống kê</button>
+          <button class="tab" data-view="members">Thành viên</button>
+        </nav>
+      </div>
+      <div class="topbar-right">
+        <span class="current-user" id="currentUserBadge"></span>
+        <button id="exportCsvBtn" class="btn">Xuất CSV</button>
+        <button id="newTaskBtn" class="btn btn-primary">+ Task mới</button>
+        <button id="logoutBtn" class="btn">Đăng xuất</button>
+      </div>
+    </header>
+
+    <!-- ===== BOARD VIEW ===== -->
+    <section id="boardView" class="view">
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Tìm theo tiêu đề...">
+        <select id="filterAssignee"><option value="">Tất cả người phụ trách</option></select>
+        <select id="filterPriority">
+          <option value="">Tất cả mức ưu tiên</option>
+          <option value="high">Cao</option>
+          <option value="medium">Trung bình</option>
+          <option value="low">Thấp</option>
+        </select>
+        <select id="filterLabel"><option value="">Tất cả nhãn</option></select>
+      </div>
+
+      <main class="board" id="board">
+        <div class="column" data-status="todo">
+          <h2>Cần làm <span class="count" id="count-todo">0</span></h2>
+          <div class="cards droppable" id="cards-todo" data-status="todo"></div>
+        </div>
+        <div class="column" data-status="doing">
+          <h2>Đang làm <span class="count" id="count-doing">0</span></h2>
+          <div class="cards droppable" id="cards-doing" data-status="doing"></div>
+        </div>
+        <div class="column" data-status="done">
+          <h2>Hoàn thành <span class="count" id="count-done">0</span></h2>
+          <div class="cards droppable" id="cards-done" data-status="done"></div>
+        </div>
+      </main>
+    </section>
+
+    <!-- ===== DASHBOARD VIEW ===== -->
+    <section id="dashboardView" class="view" style="display:none">
+      <div class="stat-cards" id="statCards"></div>
+      <div class="panel">
+        <h3>Theo người phụ trách</h3>
+        <div id="assigneeChart" class="bar-chart"></div>
+      </div>
+    </section>
+
+    <!-- ===== MEMBERS VIEW ===== -->
+    <section id="membersView" class="view" style="display:none">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Thành viên team</h3>
+          <button id="addMemberBtn" class="btn btn-primary">+ Thêm thành viên</button>
+        </div>
+        <table class="members-table" id="membersTable">
+          <thead><tr><th></th><th>Họ tên</th><th>Tên đăng nhập</th><th></th></tr></thead>
+          <tbody id="membersTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== TASK MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h2 id="modalTitle">Task mới</h2>
+      <form id="taskForm">
+        <input type="hidden" id="taskId">
+        <label>Tiêu đề<input type="text" id="titleInput" required></label>
+        <label>Mô tả<textarea id="descInput" rows="2"></textarea></label>
+        <div class="row">
+          <label>Người phụ trách
+            <select id="assigneeInput"><option value="">-- Chưa gán --</option></select>
+          </label>
+          <label>Hạn chót<input type="date" id="dueDateInput"></label>
+        </div>
+        <div class="row">
+          <label>Trạng thái
+            <select id="statusInput">
+              <option value="todo">Cần làm</option>
+              <option value="doing">Đang làm</option>
+              <option value="done">Hoàn thành</option>
+            </select>
+          </label>
+          <label>Ưu tiên
+            <select id="priorityInput">
+              <option value="low">Thấp</option>
+              <option value="medium" selected>Trung bình</option>
+              <option value="high">Cao</option>
+            </select>
+          </label>
+        </div>
+
+        <label>Nhãn</label>
+        <div class="label-picker" id="labelPicker"></div>
+        <div class="label-add-row">
+          <input type="text" id="newLabelName" placeholder="Tên nhãn mới">
+          <select id="newLabelColor">
+            <option value="#5e6c84">Xám</option>
+            <option value="#de350b">Đỏ</option>
+            <option value="#ff8b00">Cam</option>
+            <option value="#00875a">Xanh lá</option>
+            <option value="#0052cc">Xanh dương</option>
+            <option value="#6554c0">Tím</option>
+          </select>
+          <button type="button" id="addLabelBtn" class="btn">+ Nhãn</button>
+        </div>
+
+        <div id="detailSectionsWrap" style="display:none">
+          <label>Checklist</label>
+          <div id="subtaskList" class="subtask-list"></div>
+          <div class="inline-add-row">
+            <input type="text" id="newSubtaskText" placeholder="Thêm việc cần làm...">
+            <button type="button" id="addSubtaskBtn" class="btn">+</button>
+          </div>
+
+          <label>Link tham khảo</label>
+          <div id="linkList" class="link-list"></div>
+          <div class="inline-add-row">
+            <input type="text" id="newLinkTitle" placeholder="Tên link (tuỳ chọn)" style="flex:1">
+            <input type="text" id="newLinkUrl" placeholder="https://..." style="flex:2">
+            <button type="button" id="addLinkBtn" class="btn">+</button>
+          </div>
+
+          <label>Bình luận</label>
+          <div id="commentList" class="comment-list"></div>
+          <div class="inline-add-row">
+            <input type="text" id="newCommentText" placeholder="Viết bình luận...">
+            <button type="button" id="addCommentBtn" class="btn">Gửi</button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="deleteBtn" class="btn btn-danger" style="display:none">Xóa</button>
+          <div class="spacer"></div>
+          <button type="button" id="cancelBtn" class="btn">Hủy</button>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MEMBER MODAL ===== -->
+  <div class="modal-overlay" id="memberModalOverlay">
+    <div class="modal modal-sm">
+      <h2>Thêm thành viên</h2>
+      <form id="memberForm">
+        <label>Họ tên<input type="text" id="memberName" required></label>
+        <label>Tên đăng nhập<input type="text" id="memberUsername" required></label>
+        <label>Mật khẩu (tối thiểu 4 ký tự)<input type="password" id="memberPassword" required></label>
+        <div class="modal-actions">
+          <div class="spacer"></div>
+          <button type="button" id="memberCancelBtn" class="btn">Hủy</button>
+          <button type="submit" class="btn btn-primary">Tạo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

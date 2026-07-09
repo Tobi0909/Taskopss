@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum Priority {
+  P1
+  P2
+  P3
+  P4
+}
+
+enum ActivityAction {
+  CREATED
+  STATUS_CHANGED
+  ASSIGNED
+  UNASSIGNED
+  PRIORITY_CHANGED
+  DUE_DATE_CHANGED
+  TAG_ADDED
+  TAG_REMOVED
+  ATTACHMENT_ADDED
+  ATTACHMENT_REMOVED
+}
+
+enum NotificationType {
+  ASSIGNED
+  MENTIONED
+  DUE_SOON
+  STATUS_CHANGED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         Role     @default(MEMBER)
+  avatarColor  String   @default("#22B8B0") @map("avatar_color")
+  isActive     Boolean  @default(true) @map("is_active")
+  tokenVersion Int      @default(0) @map("token_version")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  createdBoards      Board[]            @relation("BoardCreatedBy")
+  assignedTasks      Task[]             @relation("TaskAssignee")
+  createdTasks       Task[]             @relation("TaskCreatedBy")
+  comments           Comment[]
+  mentions           CommentMention[]
+  attachments        Attachment[]
+  activityLogEntries ActivityLog[]
+  notifications      Notification[]
+
+  @@map("users")
+}
+
+model Board {
+  id          String   @id @default(uuid())
+  name        String
+  keyPrefix   String   @unique @map("key_prefix")
+  taskCounter Int      @default(0) @map("task_counter")
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation("BoardCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  columns BoardColumn[]
+  tasks   Task[]
+
+  @@map("boards")
+}
+
+model BoardColumn {
+  id            String   @id @default(uuid())
+  boardId       String   @map("board_id")
+  board         Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name          String
+  position      Int
+  isDoneColumn  Boolean  @default(false) @map("is_done_column")
+
+  tasks Task[]
+
+  @@index([boardId])
+  @@map("board_columns")
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  color String
+
+  taskTags TaskTag[]
+
+  @@map("tags")
+}
+
+model Task {
+  id             String    @id @default(uuid())
+  boardId        String    @map("board_id")
+  board          Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  columnId       String    @map("column_id")
+  column         BoardColumn @relation(fields: [columnId], references: [id], onDelete: Restrict)
+  sequenceNumber Int       @map("sequence_number")
+  title          String
+  description    String    @default("")
+  priority       Priority  @default(P3)
+  assigneeId     String?   @map("assignee_id")
+  assignee       User?     @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdById    String?   @map("created_by_id")
+  createdBy      User?     @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  dueDate        DateTime? @map("due_date")
+  completedAt    DateTime? @map("completed_at")
+  position       Float
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  tags          TaskTag[]
+  comments      Comment[]
+  attachments   Attachment[]
+  activityLogs  ActivityLog[]
+  notifications Notification[]
+
+  @@unique([boardId, sequenceNumber])
+  @@index([boardId, columnId])
+  @@index([assigneeId])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+model TaskTag {
+  taskId String @map("task_id")
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tagId  String @map("tag_id")
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@map("task_tags")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  authorId  String?  @map("author_id")
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  isEdited  Boolean  @default(false) @map("is_edited")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  mentions      CommentMention[]
+  notifications Notification[]
+
+  @@index([taskId])
+  @@map("comments")
+}
+
+model CommentMention {
+  commentId        String  @map("comment_id")
+  comment          Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  mentionedUserId  String  @map("mentioned_user_id")
+  mentionedUser    User    @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, mentionedUserId])
+  @@map("comment_mentions")
+}
+
+model Attachment {
+  id               String   @id @default(uuid())
+  taskId           String   @map("task_id")
+  task             Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedById     String?  @map("uploaded_by_id")
+  uploadedBy       User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  originalFilename String   @map("original_filename")
+  storedFilename   String   @map("stored_filename")
+  mimeType         String   @map("mime_type")
+  sizeBytes        BigInt   @map("size_bytes")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([taskId])
+  @@map("attachments")
+}
+
+model ActivityLog {
+  id        String         @id @default(uuid())
+  taskId    String         @map("task_id")
+  task      Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actorId   String?        @map("actor_id")
+  actor     User?          @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    ActivityAction
+  metadata  Json           @default("{}")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@index([taskId, createdAt])
+  @@map("activity_logs")
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  recipientId String           @map("recipient_id")
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  type        NotificationType
+  taskId      String?          @map("task_id")
+  task        Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  commentId   String?          @map("comment_id")
+  comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  message     String
+  isRead      Boolean          @default(false) @map("is_read")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  @@index([recipientId, isRead, createdAt])
+  @@map("notifications")
+}

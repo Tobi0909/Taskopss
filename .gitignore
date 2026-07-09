@@ -1,0 +1,9 @@
+node_modules/
+tasks.db
+.session-secret
+
+# --- taskman (backend/frontend) ---
+.env
+backend/dist/
+backend/.env
+frontend/dist/
