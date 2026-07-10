@@ -1,6 +1,7 @@
 node_modules/
 tasks.db
 .session-secret
+.claude/
 
 # --- taskman (backend/frontend) ---
 .env

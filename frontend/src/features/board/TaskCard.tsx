@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { MessageSquare, Paperclip } from 'lucide-react'
+import { AlertTriangle, MessageSquare, Paperclip } from 'lucide-react'
 import type { Task } from '@/types/api'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -93,12 +93,13 @@ export function TaskCard({ task, onClick }: { task: Task; onClick: () => void })
         {task.dueDate && (
           <span
             className={cn(
-              'rounded-sm px-1.5 py-0.5 text-[11px] font-medium',
+              'flex items-center gap-0.5 rounded-sm px-1.5 py-0.5 text-[11px] font-medium',
               dueStatus === 'overdue' && 'bg-priority-p1/15 text-priority-p1',
               dueStatus === 'due-soon' && 'bg-priority-p2/15 text-priority-p2',
               dueStatus === 'normal' && 'text-muted-foreground',
             )}
           >
+            {dueStatus === 'overdue' && <AlertTriangle className="h-3 w-3" />}
             {formatDueDate(task.dueDate)}
           </span>
         )}
