@@ -2,7 +2,8 @@
 
 Công cụ quản lý công việc nội bộ dành cho đội System/Infrastructure Engineer: Kanban board, danh sách dạng bảng, bình luận có @mention, file đính kèm, thông báo realtime, dashboard thống kê. Self-hosted hoàn toàn trên hạ tầng của bạn, không phụ thuộc dịch vụ cloud bên thứ ba.
 
-<img width="1601" height="793" alt="image" src="https://github.com/user-attachments/assets/eff5c721-ee7b-45ac-ab2e-71161a963bd5" />
+<img width="1919" height="803" alt="image" src="https://github.com/user-attachments/assets/2d338a80-e9fb-4304-8da6-c2fd19087758" />
+
 
 
 ## Kiến trúc
