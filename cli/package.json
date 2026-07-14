@@ -1,0 +1,22 @@
+{
+  "name": "taskops-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CLI để thao tác task TaskOps từ máy local qua REST API",
+  "bin": {
+    "taskops": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.5.4"
+  }
+}

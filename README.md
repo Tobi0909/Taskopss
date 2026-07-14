@@ -179,3 +179,7 @@ npm run dev
 ```
 
 Frontend chạy ở `http://localhost:5173`, tự proxy API/WebSocket sang backend ở `http://localhost:4000`.
+
+## CLI (đẩy task từ máy local)
+
+Có một CLI riêng để đăng nhập và thao tác task (tạo/xem/sửa/chuyển cột/xoá) thẳng từ terminal, không cần mở web — xem [`cli/README.md`](cli/README.md).
