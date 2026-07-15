@@ -53,9 +53,10 @@ async function main() {
         create: [
           { name: 'Tồn đọng', position: 0, isDoneColumn: false },
           { name: 'Cần làm', position: 1, isDoneColumn: false },
-          { name: 'Đang xử lý', position: 2, isDoneColumn: false },
-          { name: 'Chờ duyệt', position: 3, isDoneColumn: false },
-          { name: 'Hoàn thành', position: 4, isDoneColumn: true },
+          { name: 'Cần xử lý gấp', position: 2, isDoneColumn: false },
+          { name: 'Đang xử lý', position: 3, isDoneColumn: false },
+          { name: 'Chờ duyệt', position: 4, isDoneColumn: false },
+          { name: 'Hoàn thành', position: 5, isDoneColumn: true },
         ],
       },
     },

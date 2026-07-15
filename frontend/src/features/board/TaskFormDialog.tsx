@@ -19,6 +19,7 @@ import { useCreateTag, useTags } from '@/queries/tags'
 import { useCreateTask, useDeleteTask, useMoveTask, useSetTaskTags, useUpdateTask } from '@/queries/tasks'
 import { cn } from '@/lib/utils'
 import { ApiRequestError } from '@/lib/api'
+import { toDatetimeLocalValue } from './task-utils'
 import { CommentsTab } from './CommentsTab'
 import { AttachmentsTab } from './AttachmentsTab'
 import { ActivityTab } from './ActivityTab'
@@ -69,7 +70,7 @@ export function TaskFormDialog({
     setPriority(task?.priority ?? 'P3')
     setAssigneeId(task?.assignee?.id ?? '')
     setColumnId(task?.column.id ?? defaultColumnId ?? columns[0]?.id ?? '')
-    setDueDate(task?.dueDate ? task.dueDate.slice(0, 10) : '')
+    setDueDate(task?.dueDate ? toDatetimeLocalValue(task.dueDate) : '')
     setSelectedTagIds(new Set(task?.tags.map((t) => t.id) ?? []))
     setNewTagName('')
   }, [open, task, defaultColumnId, columns])
@@ -80,6 +81,8 @@ export function TaskFormDialog({
     e.preventDefault()
     if (!title.trim()) return
 
+    const dueDateIso = dueDate ? new Date(dueDate).toISOString() : null
+
     try {
       if (isEdit && task) {
         await updateTask.mutateAsync({
@@ -88,7 +91,7 @@ export function TaskFormDialog({
           description,
           priority,
           assigneeId: assigneeId || null,
-          dueDate: dueDate || null,
+          dueDate: dueDateIso,
         })
         if (columnId !== task.column.id) {
           await moveTask.mutateAsync({ id: task.id, columnId })
@@ -109,7 +112,7 @@ export function TaskFormDialog({
           description,
           priority,
           assigneeId: assigneeId || undefined,
-          dueDate: dueDate || undefined,
+          dueDate: dueDateIso || undefined,
           tagIds: [...selectedTagIds],
         })
         toast.success('Đã tạo task mới')
@@ -212,7 +215,7 @@ export function TaskFormDialog({
 
             <div className="flex flex-col gap-1.5">
               <Label>Hạn chót</Label>
-              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <Input type="datetime-local" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
           </div>
 

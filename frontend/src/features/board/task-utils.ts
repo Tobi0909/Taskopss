@@ -13,7 +13,17 @@ export function getDueStatus(task: Pick<Task, 'dueDate' | 'completedAt'>): DueSt
 
 export function formatDueDate(dueDate: string): string {
   const d = new Date(dueDate)
-  return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const datePart = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const timePart = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+  return `${datePart} ${timePart}`
+}
+
+// Converts an ISO date string to the "YYYY-MM-DDTHH:mm" format required by
+// <input type="datetime-local">, in the browser's local timezone.
+export function toDatetimeLocalValue(dueDate: string): string {
+  const d = new Date(dueDate)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 export const PRIORITY_LABELS: Record<string, string> = {

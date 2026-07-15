@@ -11,14 +11,18 @@ import { useDefaultBoard } from '@/queries/boards'
 import { useTasks, useMoveTask, type TaskFilters } from '@/queries/tasks'
 import type { Task } from '@/types/api'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/features/auth/AuthContext'
 import { KanbanColumn } from './KanbanColumn'
 import { TaskFormDialog } from './TaskFormDialog'
+import { AddColumnDialog } from './AddColumnDialog'
 import { TaskFilterBar, type TaskFilterState } from './TaskFilterBar'
 import { useBoardRealtime } from '@/features/realtime/useBoardRealtime'
 
 export function BoardPage() {
+  const { user } = useAuth()
   const { board, isLoading, isError } = useDefaultBoard()
   useBoardRealtime(board?.id)
+  const [addColumnOpen, setAddColumnOpen] = useState(false)
   const [filterState, setFilterState] = useState<TaskFilterState>({
     search: '',
     assigneeId: '',
@@ -137,6 +141,17 @@ export function BoardPage() {
               onTaskClick={openEditDialog}
             />
           ))}
+          {user?.role === 'ADMIN' && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 w-40 shrink-0 self-start"
+              onClick={() => setAddColumnOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Thêm cột
+            </Button>
+          )}
         </div>
       </DndContext>
 
@@ -148,6 +163,15 @@ export function BoardPage() {
         task={editingTask}
         defaultColumnId={createColumnId ?? board.columns[0]?.id}
       />
+
+      {user?.role === 'ADMIN' && (
+        <AddColumnDialog
+          open={addColumnOpen}
+          onOpenChange={setAddColumnOpen}
+          boardId={board.id}
+          columns={board.columns}
+        />
+      )}
     </div>
   )
 }
