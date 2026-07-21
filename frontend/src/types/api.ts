@@ -1,6 +1,7 @@
 export type Role = 'ADMIN' | 'MEMBER';
 export type Priority = 'P1' | 'P2' | 'P3' | 'P4';
 export type BlockedState = 'NONE' | 'BLOCKED' | 'WAITING' | 'ON_HOLD' | 'NEEDS_REVIEW';
+export type BoardRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER';
 
 export interface AuthUser {
   id: string;
@@ -32,6 +33,15 @@ export interface BoardColumn {
   name: string;
   position: number;
   isDoneColumn: boolean;
+}
+
+export interface BoardMember {
+  id: string;
+  boardId: string;
+  userId: string;
+  role: BoardRole;
+  createdAt: string;
+  user: { id: string; name: string; email: string; avatarColor: string };
 }
 
 export interface BoardWithColumns extends Board {

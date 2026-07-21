@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
-import type { Board, BoardColumn, BoardWithColumns } from '@/types/api'
+import type { Board, BoardColumn, BoardMember, BoardRole, BoardWithColumns } from '@/types/api'
 
 export function useBoards() {
   return useQuery({
@@ -55,5 +55,39 @@ export function useUpdateBoardColumnPosition(boardId: string | undefined) {
     onSuccess: () => {
       if (boardId) queryClient.invalidateQueries({ queryKey: ['boards', boardId] })
     },
+  })
+}
+
+export function useBoardMembers(boardId: string | undefined) {
+  return useQuery({
+    queryKey: ['boards', boardId, 'members'],
+    queryFn: () => apiFetch<BoardMember[]>(`/boards/${boardId}/members`),
+    enabled: !!boardId,
+  })
+}
+
+export function useAddBoardMember(boardId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { userId: string; role: BoardRole }) =>
+      apiFetch<BoardMember>(`/boards/${boardId}/members`, { method: 'POST', body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['boards', boardId, 'members'] }),
+  })
+}
+
+export function useUpdateBoardMemberRole(boardId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: BoardRole }) =>
+      apiFetch<BoardMember>(`/boards/${boardId}/members/${userId}`, { method: 'PATCH', body: { role } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['boards', boardId, 'members'] }),
+  })
+}
+
+export function useRemoveBoardMember(boardId: string | undefined) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: string) => apiFetch<void>(`/boards/${boardId}/members/${userId}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['boards', boardId, 'members'] }),
   })
 }

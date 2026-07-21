@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ApiRequestError } from '@/lib/api'
+import { BoardMembersSection } from './BoardMembersSection'
 
 function initials(name: string) {
   return name.split(' ').map((p) => p[0]).slice(-2).join('').toUpperCase()
@@ -194,6 +195,10 @@ export function MembersPage() {
           })}
         </TableBody>
       </Table>
+
+      <div className="border-t border-border pt-4">
+        <BoardMembersSection />
+      </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
