@@ -1,5 +1,6 @@
 import { useActivityLog } from '@/queries/activity'
-import type { ActivityLogEntry, BoardColumn, UserSummary } from '@/types/api'
+import type { ActivityLogEntry, BlockedState, BoardColumn, UserSummary } from '@/types/api'
+import { BLOCKED_STATE_LABELS } from './task-utils'
 
 function formatTimestamp(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -37,6 +38,18 @@ function describeActivity(entry: ActivityLogEntry, columns: BoardColumn[], users
       return `đã tải lên file "${meta.filename}"`
     case 'ATTACHMENT_REMOVED':
       return `đã xoá file "${meta.filename}"`
+    case 'BLOCKED_STATE_CHANGED': {
+      const from = BLOCKED_STATE_LABELS[(meta.from as BlockedState) ?? 'NONE'] || 'Bình thường'
+      const to = BLOCKED_STATE_LABELS[(meta.to as BlockedState) ?? 'NONE'] || 'Bình thường'
+      const reason = meta.reason ? ` (${meta.reason})` : ''
+      return `đã đổi trạng thái chặn từ "${from}" sang "${to}"${reason}`
+    }
+    case 'CHECKLIST_ITEM_ADDED':
+      return `đã thêm mục checklist "${meta.text}"`
+    case 'CHECKLIST_ITEM_TOGGLED':
+      return `đã đánh dấu "${meta.text}" là ${meta.isDone ? 'hoàn thành' : 'chưa xong'}`
+    case 'CHECKLIST_ITEM_REMOVED':
+      return `đã xoá mục checklist "${meta.text}"`
     default:
       return entry.action
   }

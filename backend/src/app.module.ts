@@ -11,6 +11,7 @@ import { UsersModule } from './users/users.module';
 import { BoardsModule } from './boards/boards.module';
 import { TagsModule } from './tags/tags.module';
 import { TasksModule } from './tasks/tasks.module';
+import { ChecklistModule } from './checklist/checklist.module';
 import { CommentsModule } from './comments/comments.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -46,6 +47,7 @@ import { RolesGuard } from './common/guards/roles.guard';
     BoardsModule,
     TagsModule,
     TasksModule,
+    ChecklistModule,
     CommentsModule,
     AttachmentsModule,
     NotificationsModule,

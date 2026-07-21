@@ -23,9 +23,18 @@ export function TablePage() {
   const [filterState, setFilterState] = useState<TaskFilterState>({
     search: '',
     assigneeId: '',
+    creatorId: '',
+    columnId: '',
     priority: '',
     tagId: '',
     overdue: false,
+    dueToday: false,
+    dueThisWeek: false,
+    createdToday: false,
+    hasAttachment: false,
+    hasComment: false,
+    hasChecklist: false,
+    blocked: false,
   })
   const [sortKey, setSortKey] = useState<SortKey>('dueDate')
   const [sortAsc, setSortAsc] = useState(true)
@@ -38,9 +47,18 @@ export function TablePage() {
       boardId: board?.id,
       q: filterState.search || undefined,
       assigneeId: filterState.assigneeId || undefined,
+      creatorId: filterState.creatorId || undefined,
+      columnId: filterState.columnId || undefined,
       priority: (filterState.priority as TaskFilters['priority']) || undefined,
       tagId: filterState.tagId || undefined,
       overdue: filterState.overdue || undefined,
+      dueToday: filterState.dueToday || undefined,
+      dueThisWeek: filterState.dueThisWeek || undefined,
+      createdToday: filterState.createdToday || undefined,
+      hasAttachment: filterState.hasAttachment || undefined,
+      hasComment: filterState.hasComment || undefined,
+      hasChecklist: filterState.hasChecklist || undefined,
+      blocked: filterState.blocked || undefined,
     }),
     [board?.id, filterState],
   )
@@ -89,7 +107,7 @@ export function TablePage() {
 
   return (
     <div className="flex flex-col gap-3">
-      <TaskFilterBar value={filterState} onChange={setFilterState} />
+      <TaskFilterBar value={filterState} onChange={setFilterState} columns={board.columns} />
 
       <Table>
         <TableHeader>

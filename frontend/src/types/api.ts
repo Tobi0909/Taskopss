@@ -1,5 +1,6 @@
 export type Role = 'ADMIN' | 'MEMBER';
 export type Priority = 'P1' | 'P2' | 'P3' | 'P4';
+export type BlockedState = 'NONE' | 'BLOCKED' | 'WAITING' | 'ON_HOLD' | 'NEEDS_REVIEW';
 
 export interface AuthUser {
   id: string;
@@ -59,6 +60,8 @@ export interface Task {
   dueDate: string | null;
   completedAt: string | null;
   position: number;
+  blockedState: BlockedState;
+  blockedReason: string | null;
   createdAt: string;
   updatedAt: string;
   column: { id: string; name: string; isDoneColumn: boolean };
@@ -67,6 +70,18 @@ export interface Task {
   tags: Tag[];
   commentCount: number;
   attachmentCount: number;
+  checklistTotal: number;
+  checklistDone: number;
+}
+
+export interface ChecklistItem {
+  id: string;
+  taskId: string;
+  text: string;
+  isDone: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Comment {

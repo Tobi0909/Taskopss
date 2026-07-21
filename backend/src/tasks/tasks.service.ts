@@ -21,6 +21,7 @@ const taskInclude = {
   assignee: { select: { id: true, name: true, avatarColor: true } },
   createdBy: { select: { id: true, name: true } },
   tags: { include: { tag: true } },
+  checklistItems: { select: { isDone: true } },
   _count: { select: { comments: true, attachments: true } },
 } satisfies Prisma.TaskInclude;
 
@@ -37,6 +38,8 @@ function mapTask(task: TaskWithRelations) {
     dueDate: task.dueDate,
     completedAt: task.completedAt,
     position: task.position,
+    blockedState: task.blockedState,
+    blockedReason: task.blockedReason,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     column: task.column,
@@ -45,7 +48,21 @@ function mapTask(task: TaskWithRelations) {
     tags: task.tags.map((t) => t.tag),
     commentCount: task._count.comments,
     attachmentCount: task._count.attachments,
+    checklistTotal: task.checklistItems.length,
+    checklistDone: task.checklistItems.filter((i) => i.isDone).length,
   };
+}
+
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
 }
 
 @Injectable()
@@ -59,13 +76,37 @@ export class TasksService {
     const where: Prisma.TaskWhereInput = {};
     if (query.boardId) where.boardId = query.boardId;
     if (query.assigneeId) where.assigneeId = query.assigneeId;
+    if (query.creatorId) where.createdById = query.creatorId;
+    if (query.columnId) where.columnId = query.columnId;
     if (query.priority) where.priority = query.priority;
     if (query.tagId) where.tags = { some: { tagId: query.tagId } };
-    if (query.q) where.title = { contains: query.q, mode: 'insensitive' };
+    if (query.q) {
+      where.OR = [
+        { title: { contains: query.q, mode: 'insensitive' } },
+        { description: { contains: query.q, mode: 'insensitive' } },
+      ];
+    }
     if (query.overdue) {
       where.dueDate = { lt: new Date() };
       where.completedAt = null;
     }
+    if (query.dueToday) {
+      const start = startOfDay(new Date());
+      where.dueDate = { gte: start, lt: addDays(start, 1) };
+    }
+    if (query.dueThisWeek) {
+      const start = startOfDay(new Date());
+      where.dueDate = { gte: start, lt: addDays(start, 7) };
+    }
+    if (query.createdToday) {
+      const start = startOfDay(new Date());
+      where.createdAt = { gte: start, lt: addDays(start, 1) };
+    }
+    if (query.hasAttachment) where.attachments = { some: {} };
+    if (query.hasComment) where.comments = { some: {} };
+    if (query.hasChecklist) where.checklistItems = { some: {} };
+    if (query.blockedState) where.blockedState = query.blockedState;
+    if (query.blocked) where.blockedState = { not: 'NONE' };
 
     const tasks = await this.prisma.task.findMany({
       where,
@@ -201,6 +242,14 @@ export class TasksService {
         });
       }
     }
+    if (dto.blockedState !== undefined && dto.blockedState !== existing.blockedState) {
+      activityEntries.push({
+        taskId: id,
+        actorId,
+        action: ActivityAction.BLOCKED_STATE_CHANGED,
+        metadata: { from: existing.blockedState, to: dto.blockedState, reason: dto.blockedReason ?? null },
+      });
+    }
 
     await this.prisma.$transaction(async (tx) => {
       await tx.task.update({
@@ -211,6 +260,8 @@ export class TasksService {
           priority: dto.priority,
           assigneeId: dto.assigneeId,
           dueDate: dto.dueDate === undefined ? undefined : dto.dueDate ? new Date(dto.dueDate) : null,
+          blockedState: dto.blockedState,
+          blockedReason: dto.blockedReason === undefined ? undefined : dto.blockedReason,
         },
       });
       if (activityEntries.length > 0) {

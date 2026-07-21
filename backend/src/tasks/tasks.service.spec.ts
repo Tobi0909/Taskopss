@@ -29,6 +29,9 @@ describe('TasksService', () => {
     assignee: null,
     createdBy: { id: 'user-1', name: 'An' },
     tags: [],
+    blockedState: 'NONE',
+    blockedReason: null,
+    checklistItems: [],
     _count: { comments: 0, attachments: 0 },
     ...overrides,
   });
@@ -167,6 +170,74 @@ describe('TasksService', () => {
 
       expect(prisma.activityLog.create).not.toHaveBeenCalled();
       expect(eventEmitter.emit).not.toHaveBeenCalledWith(TASK_EVENTS.STATUS_CHANGED, expect.anything());
+    });
+  });
+
+  describe('findAll', () => {
+    it('lọc theo hasChecklist bằng quan hệ checklistItems.some', async () => {
+      prisma.task.findMany.mockResolvedValue([]);
+
+      await tasksService.findAll({ hasChecklist: true } as any);
+
+      expect(prisma.task.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ checklistItems: { some: {} } }) }),
+      );
+    });
+
+    it('lọc theo blocked=true bằng blockedState != NONE', async () => {
+      prisma.task.findMany.mockResolvedValue([]);
+
+      await tasksService.findAll({ blocked: true } as any);
+
+      expect(prisma.task.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ blockedState: { not: 'NONE' } }) }),
+      );
+    });
+
+    it('q tìm cả title lẫn description', async () => {
+      prisma.task.findMany.mockResolvedValue([]);
+
+      await tasksService.findAll({ q: 'wifi' } as any);
+
+      expect(prisma.task.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [
+              { title: { contains: 'wifi', mode: 'insensitive' } },
+              { description: { contains: 'wifi', mode: 'insensitive' } },
+            ],
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('ghi activity BLOCKED_STATE_CHANGED khi blockedState thay đổi', async () => {
+      prisma.task.findUnique
+        .mockResolvedValueOnce({ id: 'task-1', boardId: 'board-1', blockedState: 'NONE', assigneeId: null })
+        .mockResolvedValueOnce(fullTaskRow());
+
+      await tasksService.update('task-1', { blockedState: 'BLOCKED', blockedReason: 'Chờ vendor' } as any, 'user-1');
+
+      expect(prisma.activityLog.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            action: 'BLOCKED_STATE_CHANGED',
+            metadata: { from: 'NONE', to: 'BLOCKED', reason: 'Chờ vendor' },
+          }),
+        ],
+      });
+    });
+
+    it('không ghi activity nếu blockedState không đổi', async () => {
+      prisma.task.findUnique
+        .mockResolvedValueOnce({ id: 'task-1', boardId: 'board-1', blockedState: 'BLOCKED', assigneeId: null })
+        .mockResolvedValueOnce(fullTaskRow());
+
+      await tasksService.update('task-1', { blockedState: 'BLOCKED' } as any, 'user-1');
+
+      expect(prisma.activityLog.createMany).not.toHaveBeenCalled();
     });
   });
 

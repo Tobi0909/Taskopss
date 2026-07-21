@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import type { BoardColumn, Priority, Task } from '@/types/api'
+import type { BlockedState, BoardColumn, Priority, Task } from '@/types/api'
 import {
   Dialog,
   DialogContent,
@@ -19,12 +19,14 @@ import { useCreateTag, useTags } from '@/queries/tags'
 import { useCreateTask, useDeleteTask, useMoveTask, useSetTaskTags, useUpdateTask } from '@/queries/tasks'
 import { cn } from '@/lib/utils'
 import { ApiRequestError } from '@/lib/api'
-import { toDatetimeLocalValue } from './task-utils'
+import { BLOCKED_STATE_LABELS, toDatetimeLocalValue } from './task-utils'
 import { CommentsTab } from './CommentsTab'
 import { AttachmentsTab } from './AttachmentsTab'
 import { ActivityTab } from './ActivityTab'
+import { ChecklistTab } from './ChecklistTab'
 
 const PRIORITIES: Priority[] = ['P1', 'P2', 'P3', 'P4']
+const BLOCKED_STATES: BlockedState[] = ['NONE', 'BLOCKED', 'WAITING', 'ON_HOLD', 'NEEDS_REVIEW']
 const TAG_COLOR_PALETTE = ['#4C8DFF', '#F5A524', '#F0575A', '#22B8B0', '#8B92C9', '#6B7280']
 
 interface TaskFormDialogProps {
@@ -60,6 +62,8 @@ export function TaskFormDialog({
   const [assigneeId, setAssigneeId] = useState<string>('')
   const [columnId, setColumnId] = useState<string>('')
   const [dueDate, setDueDate] = useState('')
+  const [blockedState, setBlockedState] = useState<BlockedState>('NONE')
+  const [blockedReason, setBlockedReason] = useState('')
   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set())
   const [newTagName, setNewTagName] = useState('')
 
@@ -71,6 +75,8 @@ export function TaskFormDialog({
     setAssigneeId(task?.assignee?.id ?? '')
     setColumnId(task?.column.id ?? defaultColumnId ?? columns[0]?.id ?? '')
     setDueDate(task?.dueDate ? toDatetimeLocalValue(task.dueDate) : '')
+    setBlockedState(task?.blockedState ?? 'NONE')
+    setBlockedReason(task?.blockedReason ?? '')
     setSelectedTagIds(new Set(task?.tags.map((t) => t.id) ?? []))
     setNewTagName('')
   }, [open, task, defaultColumnId, columns])
@@ -92,6 +98,8 @@ export function TaskFormDialog({
           priority,
           assigneeId: assigneeId || null,
           dueDate: dueDateIso,
+          blockedState,
+          blockedReason: blockedState === 'NONE' ? null : blockedReason || null,
         })
         if (columnId !== task.column.id) {
           await moveTask.mutateAsync({ id: task.id, columnId })
@@ -174,6 +182,9 @@ export function TaskFormDialog({
                 <TabsTrigger value="attachments">
                   File{task.attachmentCount > 0 ? ` (${task.attachmentCount})` : ''}
                 </TabsTrigger>
+                <TabsTrigger value="checklist">
+                  Checklist{task.checklistTotal > 0 ? ` (${task.checklistDone}/${task.checklistTotal})` : ''}
+                </TabsTrigger>
                 <TabsTrigger value="activity">Lịch sử</TabsTrigger>
               </>
             )}
@@ -253,6 +264,32 @@ export function TaskFormDialog({
             </div>
           </div>
 
+          {isEdit && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label>Trạng thái chặn</Label>
+                <Select value={blockedState} onValueChange={(v) => setBlockedState(v as BlockedState)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BLOCKED_STATES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s === 'NONE' ? '-- Bình thường --' : BLOCKED_STATE_LABELS[s]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {blockedState !== 'NONE' && (
+                <div className="flex flex-col gap-1.5">
+                  <Label>Lý do</Label>
+                  <Input value={blockedReason} onChange={(e) => setBlockedReason(e.target.value)} placeholder="Vì sao bị chặn?" />
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex flex-col gap-1.5">
             <Label>Nhãn</Label>
             <div className="flex flex-wrap gap-1.5">
@@ -295,6 +332,9 @@ export function TaskFormDialog({
               </TabsContent>
               <TabsContent value="attachments">
                 <AttachmentsTab taskId={task.id} />
+              </TabsContent>
+              <TabsContent value="checklist">
+                <ChecklistTab taskId={task.id} />
               </TabsContent>
               <TabsContent value="activity">
                 <ActivityTab taskId={task.id} columns={columns} users={users ?? []} />

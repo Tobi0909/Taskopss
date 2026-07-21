@@ -1,29 +1,8 @@
 import { useDashboardStats } from '@/queries/dashboard'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
-
-function initials(name: string) {
-  return name.split(' ').map((p) => p[0]).slice(-2).join('').toUpperCase()
-}
-
-function StatCard({ label, value, tone }: { label: string; value: string | number; tone?: 'destructive' | 'primary' }) {
-  return (
-    <div className="rounded-md bg-secondary/60 p-3">
-      <p className="mb-1.5 text-xs text-muted-foreground">{label}</p>
-      <p
-        className={
-          tone === 'destructive'
-            ? 'text-xl font-medium text-priority-p1'
-            : tone === 'primary'
-              ? 'text-xl font-medium text-primary'
-              : 'text-xl font-medium'
-        }
-      >
-        {value}
-      </p>
-    </div>
-  )
-}
+import { initials } from '@/features/board/task-utils'
+import { StatCard } from './StatCard'
 
 export function DashboardPage() {
   const { data, isLoading, isError } = useDashboardStats()

@@ -1,5 +1,5 @@
 import { IsDateString, IsEnum, IsOptional, IsString, IsUUID, MinLength, ValidateIf } from 'class-validator';
-import { Priority } from '@prisma/client';
+import { BlockedState, Priority } from '@prisma/client';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -24,4 +24,13 @@ export class UpdateTaskDto {
   @ValidateIf((_, value) => value !== null)
   @IsDateString()
   dueDate?: string | null;
+
+  @IsOptional()
+  @IsEnum(BlockedState)
+  blockedState?: BlockedState;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  blockedReason?: string | null;
 }

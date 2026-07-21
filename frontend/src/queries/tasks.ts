@@ -1,24 +1,44 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api'
-import type { Priority, Task } from '@/types/api'
+import type { BlockedState, Priority, Task } from '@/types/api'
 
 export interface TaskFilters {
   boardId?: string
   assigneeId?: string
+  creatorId?: string
+  columnId?: string
   priority?: Priority
   tagId?: string
   q?: string
   overdue?: boolean
+  dueToday?: boolean
+  dueThisWeek?: boolean
+  createdToday?: boolean
+  hasAttachment?: boolean
+  hasComment?: boolean
+  hasChecklist?: boolean
+  blockedState?: BlockedState
+  blocked?: boolean
 }
 
 function toQueryString(filters: TaskFilters) {
   const params = new URLSearchParams()
   if (filters.boardId) params.set('boardId', filters.boardId)
   if (filters.assigneeId) params.set('assigneeId', filters.assigneeId)
+  if (filters.creatorId) params.set('creatorId', filters.creatorId)
+  if (filters.columnId) params.set('columnId', filters.columnId)
   if (filters.priority) params.set('priority', filters.priority)
   if (filters.tagId) params.set('tagId', filters.tagId)
   if (filters.q) params.set('q', filters.q)
   if (filters.overdue) params.set('overdue', 'true')
+  if (filters.dueToday) params.set('dueToday', 'true')
+  if (filters.dueThisWeek) params.set('dueThisWeek', 'true')
+  if (filters.createdToday) params.set('createdToday', 'true')
+  if (filters.hasAttachment) params.set('hasAttachment', 'true')
+  if (filters.hasComment) params.set('hasComment', 'true')
+  if (filters.hasChecklist) params.set('hasChecklist', 'true')
+  if (filters.blockedState) params.set('blockedState', filters.blockedState)
+  if (filters.blocked) params.set('blocked', 'true')
   const qs = params.toString()
   return qs ? `?${qs}` : ''
 }
@@ -57,6 +77,8 @@ export interface UpdateTaskInput {
   priority?: Priority
   assigneeId?: string | null
   dueDate?: string | null
+  blockedState?: BlockedState
+  blockedReason?: string | null
 }
 
 export function useUpdateTask() {

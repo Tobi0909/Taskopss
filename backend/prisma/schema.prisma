@@ -31,6 +31,18 @@ enum ActivityAction {
   TAG_REMOVED
   ATTACHMENT_ADDED
   ATTACHMENT_REMOVED
+  BLOCKED_STATE_CHANGED
+  CHECKLIST_ITEM_ADDED
+  CHECKLIST_ITEM_TOGGLED
+  CHECKLIST_ITEM_REMOVED
+}
+
+enum BlockedState {
+  NONE
+  BLOCKED
+  WAITING
+  ON_HOLD
+  NEEDS_REVIEW
 }
 
 enum NotificationType {
@@ -120,20 +132,38 @@ model Task {
   dueDate        DateTime? @map("due_date")
   completedAt    DateTime? @map("completed_at")
   position       Float
+  blockedState   BlockedState @default(NONE) @map("blocked_state")
+  blockedReason  String?   @map("blocked_reason")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  tags          TaskTag[]
-  comments      Comment[]
-  attachments   Attachment[]
-  activityLogs  ActivityLog[]
-  notifications Notification[]
+  tags           TaskTag[]
+  comments       Comment[]
+  attachments    Attachment[]
+  activityLogs   ActivityLog[]
+  notifications  Notification[]
+  checklistItems ChecklistItem[]
 
   @@unique([boardId, sequenceNumber])
   @@index([boardId, columnId])
   @@index([assigneeId])
   @@index([dueDate])
+  @@index([blockedState])
   @@map("tasks")
+}
+
+model ChecklistItem {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  text      String
+  isDone    Boolean  @default(false) @map("is_done")
+  position  Float
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([taskId])
+  @@map("checklist_items")
 }
 
 model TaskTag {
