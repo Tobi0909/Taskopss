@@ -5,7 +5,6 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import * as Joi from 'joi';
 import { PrismaModule } from './prisma/prisma.module';
-import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BoardsModule } from './boards/boards.module';
@@ -17,8 +16,12 @@ import { AttachmentsModule } from './attachments/attachments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { HealthModule } from './health/health.module';
+import { AuditModule } from './audit/audit.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { BoardMembershipGuard } from './common/guards/board-membership.guard';
 
 @Module({
   imports: [
@@ -53,11 +56,14 @@ import { RolesGuard } from './common/guards/roles.guard';
     NotificationsModule,
     DashboardModule,
     RealtimeModule,
+    HealthModule,
+    AuditModule,
+    WebhooksModule,
   ],
-  controllers: [AppController],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: BoardMembershipGuard },
   ],
 })
 export class AppModule {}

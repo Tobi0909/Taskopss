@@ -23,6 +23,18 @@ taskops login --url http://<địa-chỉ-backend>:4000
 
 Nếu deploy qua Docker theo `docker-compose.yml` mặc định, backend expose ở `BACKEND_PORT` (mặc định 4000): `taskops login --url http://<server>:4000`.
 
+### Dùng API token thay vì đăng nhập (CI/script/headless)
+
+Thay vì `taskops login`, có thể tạo một API token cá nhân (không hết hạn theo phiên, thu hồi được bất kỳ lúc nào) và trỏ CLI vào đó qua biến môi trường — không cần lưu mật khẩu hay refresh token cục bộ:
+
+```bash
+export TASKOPS_API_URL=http://<địa-chỉ-backend>:4000
+export TASKOPS_API_TOKEN=tok_xxxxxxxx
+taskops whoami
+```
+
+Tạo token: đăng nhập một lần bằng JWT rồi gọi `POST /api/users/me/tokens` với `{ "name": "ci-pipeline" }` — server trả về token dạng `tok_...` đúng một lần, hãy lưu lại ngay. Thu hồi bằng `DELETE /api/users/me/tokens/:id`. Khi `TASKOPS_API_TOKEN` được đặt, CLI bỏ qua hoàn toàn phiên đăng nhập đã lưu và refresh-token flow.
+
 ## Lệnh
 
 ```

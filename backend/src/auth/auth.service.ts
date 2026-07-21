@@ -2,8 +2,9 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { User } from '@prisma/client';
+import { AuditAction, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { JwtAccessPayload, JwtRefreshPayload } from './types/auth.types';
 
 export interface SafeUser {
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   toSafeUser(user: User): SafeUser {
@@ -40,12 +42,15 @@ export class AuthService {
   async validateCredentials(email: string, password: string): Promise<User> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive) {
+      await this.auditLog.record(null, AuditAction.LOGIN_FAILED, 'User', null, { email });
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatches) {
+      await this.auditLog.record(user.id, AuditAction.LOGIN_FAILED, 'User', user.id, { email });
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
+    await this.auditLog.record(user.id, AuditAction.LOGIN_SUCCEEDED, 'User', user.id, { email });
     return user;
   }
 

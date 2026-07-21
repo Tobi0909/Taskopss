@@ -19,4 +19,6 @@ COPY package*.json ./
 RUN mkdir -p /data/uploads
 
 EXPOSE 4000
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "require('http').get('http://127.0.0.1:4000/api/ready',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]

@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ActivityAction, Prisma, Priority } from '@prisma/client';
+import { ActivityAction, Prisma, Priority, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuthenticatedUser } from '../auth/types/auth.types';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
@@ -72,8 +73,11 @@ export class TasksService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async findAll(query: QueryTasksDto) {
+  async findAll(query: QueryTasksDto, currentUser: AuthenticatedUser) {
     const where: Prisma.TaskWhereInput = {};
+    if (currentUser.role !== Role.ADMIN) {
+      where.board = { members: { some: { userId: currentUser.id } } };
+    }
     if (query.boardId) where.boardId = query.boardId;
     if (query.assigneeId) where.assigneeId = query.assigneeId;
     if (query.creatorId) where.createdById = query.creatorId;

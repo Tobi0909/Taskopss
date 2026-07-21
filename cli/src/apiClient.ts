@@ -91,8 +91,36 @@ export interface RequestOptions {
   body?: unknown;
 }
 
-/** Gọi API đã xác thực; tự refresh access token một lần nếu gặp 401. */
+/** Nếu có TASKOPS_API_TOKEN, dùng thẳng token đó thay vì phiên đăng nhập đã lưu. */
+function envTokenSession(): { apiUrl: string; accessToken: string } | undefined {
+  const accessToken = process.env.TASKOPS_API_TOKEN;
+  if (!accessToken) return undefined;
+  const apiUrl = process.env.TASKOPS_API_URL;
+  if (!apiUrl) {
+    console.error('Đã đặt TASKOPS_API_TOKEN nhưng thiếu TASKOPS_API_URL.');
+    process.exit(1);
+  }
+  return { apiUrl: normalizeApiUrlIfNeeded(apiUrl), accessToken };
+}
+
+function normalizeApiUrlIfNeeded(apiUrl: string): string {
+  return /\/api$/.test(apiUrl.replace(/\/+$/, '')) ? apiUrl.replace(/\/+$/, '') : `${apiUrl.replace(/\/+$/, '')}/api`;
+}
+
+/** Gọi API đã xác thực; tự refresh access token một lần nếu gặp 401 (bỏ qua nếu dùng API token qua env). */
 export async function apiRequest<T>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
+  const envSession = envTokenSession();
+  if (envSession) {
+    const res = await rawRequest(envSession.apiUrl, method, path, {
+      query: opts.query,
+      body: opts.body,
+      accessToken: envSession.accessToken,
+    });
+    if (!res.ok) throw new ApiError(res.status, await parseErrorMessage(res));
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  }
+
   const config = loadConfig();
   requireSession(config);
   const apiUrl = config.apiUrl;

@@ -174,10 +174,12 @@ describe('TasksService', () => {
   });
 
   describe('findAll', () => {
+    const adminUser = { id: 'user-1', role: 'ADMIN' } as any;
+
     it('lọc theo hasChecklist bằng quan hệ checklistItems.some', async () => {
       prisma.task.findMany.mockResolvedValue([]);
 
-      await tasksService.findAll({ hasChecklist: true } as any);
+      await tasksService.findAll({ hasChecklist: true } as any, adminUser);
 
       expect(prisma.task.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ checklistItems: { some: {} } }) }),
@@ -187,7 +189,7 @@ describe('TasksService', () => {
     it('lọc theo blocked=true bằng blockedState != NONE', async () => {
       prisma.task.findMany.mockResolvedValue([]);
 
-      await tasksService.findAll({ blocked: true } as any);
+      await tasksService.findAll({ blocked: true } as any, adminUser);
 
       expect(prisma.task.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ blockedState: { not: 'NONE' } }) }),
@@ -197,7 +199,7 @@ describe('TasksService', () => {
     it('q tìm cả title lẫn description', async () => {
       prisma.task.findMany.mockResolvedValue([]);
 
-      await tasksService.findAll({ q: 'wifi' } as any);
+      await tasksService.findAll({ q: 'wifi' } as any, adminUser);
 
       expect(prisma.task.findMany).toHaveBeenCalledWith(
         expect.objectContaining({

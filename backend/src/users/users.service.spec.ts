@@ -3,6 +3,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { Role } from '@prisma/client';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -16,6 +17,7 @@ describe('UsersService', () => {
       count: jest.Mock;
     };
   };
+  let auditLog: { record: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -28,9 +30,14 @@ describe('UsersService', () => {
         count: jest.fn(),
       },
     };
+    auditLog = { record: jest.fn() };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [UsersService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        UsersService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: AuditLogService, useValue: auditLog },
+      ],
     }).compile();
 
     usersService = moduleRef.get(UsersService);
@@ -41,7 +48,7 @@ describe('UsersService', () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'existing' });
 
       await expect(
-        usersService.create({ email: 'a@company.local', name: 'A', password: 'password123' }),
+        usersService.create({ email: 'a@company.local', name: 'A', password: 'password123' }, 'actor-1'),
       ).rejects.toThrow(ConflictException);
       expect(prisma.user.create).not.toHaveBeenCalled();
     });
@@ -50,7 +57,7 @@ describe('UsersService', () => {
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({ id: 'new-user' });
 
-      await usersService.create({ email: 'a@company.local', name: 'A', password: 'password123' });
+      await usersService.create({ email: 'a@company.local', name: 'A', password: 'password123' }, 'actor-1');
 
       expect(prisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -64,14 +71,14 @@ describe('UsersService', () => {
     it('ném NotFoundException nếu không tìm thấy user', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(usersService.update('missing-id', { name: 'B' })).rejects.toThrow(NotFoundException);
+      await expect(usersService.update('missing-id', { name: 'B' }, 'actor-1')).rejects.toThrow(NotFoundException);
     });
 
     it('cập nhật user khi tồn tại', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'user-1', role: Role.MEMBER, isActive: true });
       prisma.user.update.mockResolvedValue({ id: 'user-1', name: 'B' });
 
-      const result = await usersService.update('user-1', { name: 'B' });
+      const result = await usersService.update('user-1', { name: 'B' }, 'actor-1');
 
       expect(result).toEqual({ id: 'user-1', name: 'B' });
     });
@@ -80,7 +87,7 @@ describe('UsersService', () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: Role.ADMIN, isActive: true });
       prisma.user.count.mockResolvedValue(0);
 
-      await expect(usersService.update('admin-1', { role: Role.MEMBER })).rejects.toThrow(
+      await expect(usersService.update('admin-1', { role: Role.MEMBER }, 'actor-1')).rejects.toThrow(
         BadRequestException,
       );
       expect(prisma.user.update).not.toHaveBeenCalled();
@@ -91,7 +98,7 @@ describe('UsersService', () => {
       prisma.user.count.mockResolvedValue(1);
       prisma.user.update.mockResolvedValue({ id: 'admin-1', role: Role.MEMBER });
 
-      await usersService.update('admin-1', { role: Role.MEMBER });
+      await usersService.update('admin-1', { role: Role.MEMBER }, 'actor-1');
 
       expect(prisma.user.update).toHaveBeenCalled();
     });
@@ -100,14 +107,14 @@ describe('UsersService', () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'admin-1', role: Role.ADMIN, isActive: true });
       prisma.user.count.mockResolvedValue(0);
 
-      await expect(usersService.update('admin-1', { isActive: false })).rejects.toThrow(BadRequestException);
+      await expect(usersService.update('admin-1', { isActive: false }, 'actor-1')).rejects.toThrow(BadRequestException);
     });
 
     it('băm mật khẩu mới và tăng tokenVersion khi đổi mật khẩu', async () => {
       prisma.user.findUnique.mockResolvedValue({ id: 'user-1', role: Role.MEMBER, isActive: true });
       prisma.user.update.mockResolvedValue({ id: 'user-1' });
 
-      await usersService.update('user-1', { password: 'new-password-123' });
+      await usersService.update('user-1', { password: 'new-password-123' }, 'actor-1');
 
       const updateCall = prisma.user.update.mock.calls[0][0];
       expect(updateCall.data.passwordHash).toBeDefined();

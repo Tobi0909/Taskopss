@@ -1,13 +1,17 @@
 import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Res } from '@nestjs/common';
 import { Response } from 'express';
+import { BoardRole } from '@prisma/client';
 import { AttachmentsService } from './attachments.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/types/auth.types';
+import { BoardRoles } from '../common/decorators/board-roles.decorator';
+import { fromAttachmentParam } from '../common/board-id-resolvers';
 
 @Controller('attachments')
 export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
 
+  @BoardRoles(BoardRole.VIEWER, fromAttachmentParam('id'))
   @Get(':id/download')
   async download(@Param('id') id: string, @Res() res: Response) {
     const info = await this.attachmentsService.getDownloadInfo(id);
@@ -21,6 +25,7 @@ export class AttachmentsController {
     });
   }
 
+  @BoardRoles(BoardRole.MEMBER, fromAttachmentParam('id'))
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {

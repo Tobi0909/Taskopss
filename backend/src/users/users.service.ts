@@ -1,7 +1,8 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { Role } from '@prisma/client';
+import { AuditAction, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditLogService } from '../audit/audit-log.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -17,7 +18,10 @@ const SAFE_USER_SELECT = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   async findAllActive() {
     return this.prisma.user.findMany({
@@ -34,13 +38,13 @@ export class UsersService {
     });
   }
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto, actorId: string) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
       throw new ConflictException('Email này đã có tài khoản');
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         name: dto.name,
@@ -50,9 +54,14 @@ export class UsersService {
       },
       select: SAFE_USER_SELECT,
     });
+    await this.auditLog.record(actorId, AuditAction.USER_CREATED, 'User', user.id, {
+      email: user.email,
+      role: user.role,
+    });
+    return user;
   }
 
-  async update(id: string, dto: UpdateUserDto) {
+  async update(id: string, dto: UpdateUserDto, actorId: string) {
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Không tìm thấy thành viên');
@@ -67,8 +76,9 @@ export class UsersService {
     }
 
     const passwordHash = dto.password ? await bcrypt.hash(dto.password, 10) : undefined;
+    const isBeingDeactivated = dto.isActive === false && existing.isActive;
 
-    return this.prisma.user.update({
+    const user = await this.prisma.user.update({
       where: { id },
       data: {
         name: dto.name,
@@ -79,6 +89,15 @@ export class UsersService {
       },
       select: SAFE_USER_SELECT,
     });
+    await this.auditLog.record(actorId, AuditAction.USER_UPDATED, 'User', id, {
+      changed: Object.keys(dto),
+    });
+    if (isBeingDeactivated) {
+      await this.auditLog.record(actorId, AuditAction.USER_DEACTIVATED, 'User', id, {
+        email: existing.email,
+      });
+    }
+    return user;
   }
 
   async remove(id: string, actorId: string) {
@@ -93,6 +112,9 @@ export class UsersService {
       await this.assertOtherActiveAdminExists(id);
     }
     await this.prisma.user.delete({ where: { id } });
+    await this.auditLog.record(actorId, AuditAction.USER_DELETED, 'User', id, {
+      email: existing.email,
+    });
   }
 
   private async assertOtherActiveAdminExists(excludeUserId: string) {
