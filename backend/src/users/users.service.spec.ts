@@ -16,6 +16,9 @@ describe('UsersService', () => {
       delete: jest.Mock;
       count: jest.Mock;
     };
+    board: { findMany: jest.Mock };
+    boardMember: { createMany: jest.Mock };
+    $transaction: jest.Mock;
   };
   let auditLog: { record: jest.Mock };
 
@@ -29,6 +32,9 @@ describe('UsersService', () => {
         delete: jest.fn(),
         count: jest.fn(),
       },
+      board: { findMany: jest.fn().mockResolvedValue([]) },
+      boardMember: { createMany: jest.fn() },
+      $transaction: jest.fn((cb: any) => cb(prisma)),
     };
     auditLog = { record: jest.fn() };
 

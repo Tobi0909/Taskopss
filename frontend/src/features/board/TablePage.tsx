@@ -18,7 +18,7 @@ function initials(name: string) {
 }
 
 export function TablePage() {
-  const { board, isLoading, isError } = useDefaultBoard()
+  const { board, isLoading, isError, hasNoBoards } = useDefaultBoard()
   useBoardRealtime(board?.id)
   const [filterState, setFilterState] = useState<TaskFilterState>({
     search: '',
@@ -103,6 +103,13 @@ export function TablePage() {
   }
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Đang tải...</p>
+  if (hasNoBoards) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Bạn chưa được thêm vào board nào. Liên hệ quản trị viên để được cấp quyền truy cập.
+      </p>
+    )
+  }
   if (isError || !board) return <p className="text-sm text-destructive">Không tải được dữ liệu.</p>
 
   return (

@@ -21,10 +21,12 @@ export function useDefaultBoard() {
   const boardsQuery = useBoards()
   const defaultBoardId = boardsQuery.data?.[0]?.id
   const boardQuery = useBoard(defaultBoardId)
+  const hasNoBoards = boardsQuery.isSuccess && boardsQuery.data.length === 0
   return {
     board: boardQuery.data,
     isLoading: boardsQuery.isLoading || boardQuery.isLoading,
     isError: boardsQuery.isError || boardQuery.isError,
+    hasNoBoards,
   }
 }
 

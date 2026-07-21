@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { AuditAction, Role } from '@prisma/client';
+import { AuditAction, BoardRole, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit/audit-log.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -44,15 +44,28 @@ export class UsersService {
       throw new ConflictException('Email này đã có tài khoản');
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        name: dto.name,
-        passwordHash,
-        role: dto.role ?? Role.MEMBER,
-        avatarColor: dto.avatarColor ?? '#22B8B0',
-      },
-      select: SAFE_USER_SELECT,
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: dto.email,
+          name: dto.name,
+          passwordHash,
+          role: dto.role ?? Role.MEMBER,
+          avatarColor: dto.avatarColor ?? '#22B8B0',
+        },
+        select: SAFE_USER_SELECT,
+      });
+      // New users join every existing board as MEMBER by default, same as
+      // everyone else — matches pre-RBAC behavior where every board was
+      // implicitly visible to every user. Boards meant to be private should
+      // have members managed explicitly via the board membership endpoints.
+      const boards = await tx.board.findMany({ select: { id: true } });
+      if (boards.length > 0) {
+        await tx.boardMember.createMany({
+          data: boards.map((board) => ({ boardId: board.id, userId: created.id, role: BoardRole.MEMBER })),
+        });
+      }
+      return created;
     });
     await this.auditLog.record(actorId, AuditAction.USER_CREATED, 'User', user.id, {
       email: user.email,
